@@ -18,7 +18,6 @@
                 <label for="exampleFormControlSelect1"><b>REGIÓN</b></label>
                 <select
                   v-model="regionSelect"
-                  v-loading.fullscreen.lock="fullscreenLoading"
                   class="form-control"
                   id="exampleFormControlSelect1"
                 >
@@ -616,8 +615,8 @@ export default {
     },
     fetch() {
       this.fullscreenLoading = true;
-      //habilite el proxy en el archivo vue.config.js, para que en el navegador no me salte el metodo de seguridad CORS,
-      //que al intentar acceder a una API desde un ORIGIN no permitido bloquea el request.
+      //habilite el proxy a la ruta raiz en el archivo vue.config.js, para que en el navegador no me salte el metodo de seguridad CORS al hacer la solicitud a la API,
+      //intentar acceder a la URL desde un ORIGIN no permitido bloquea el request.
       var url = "http://localhost:8080/index.php/ws/getLocalesTurnos/";
       axios
         .get(url)
