@@ -16,37 +16,43 @@
             <div class="col-md-6">
               <div class="form-group">
                 <label for="exampleFormControlSelect1"><b>REGIÓN</b></label>
-                <select  v-model="regionSelect" class="form-control" id="exampleFormControlSelect1">
+                <select
+                  v-model="regionSelect"
+                  v-loading.fullscreen.lock="fullscreenLoading"
+                  class="form-control"
+                  id="exampleFormControlSelect1"
+                >
                   <option>Selecciona</option>
-                  <option v-for="region in regiones" v-bind:key="region.id">{{region.NombreRegion}}</option>
+                  <option
+                    v-for="region in regiones"
+                    v-bind:key="region.id"
+                    :value="region.id"
+                  >
+                    {{ region.NombreRegion }}
+                  </option>
                 </select>
               </div>
             </div>
             <div class="col-md-3">
               <div class="form-group">
                 <label for="exampleFormControlSelect1"><b>COMUNA</b></label>
-                <select  class="form-control" id="exampleFormControlSelect1">
+                <select class="form-control" id="exampleFormControlSelect1">
                   <option>Selecciona</option>
                 </select>
               </div>
             </div>
             <div class="col-md-3">
               <div class="form-group">
-                <button type="button" class="btn btn-outline-success search">BUSCAR</button>
+                <button
+                  @click.prevent="fetch" v-loading.fullscreen.lock="fullscreenLoading"
+                  type="button"
+                  class="btn btn-outline-success search"
+                >
+                  BUSCAR
+                </button>
               </div>
             </div>
           </div>
-
-          <!-- <el-select v-model="regionSelect" placeholder="Select">
-                  <el-option
-                    v-for="region in regiones"
-                    :key="region.NombreRegion"
-                    :label="region.NombreRegion"
-                    :value="region.id"
-                  >
-                  </el-option>
-                </el-select> -->
-
           <div class="row">
             <farmacia
               v-for="farmacia in listarUsuariosPaginated"
@@ -104,11 +110,10 @@ export default {
       fechas: {
         fecha_acual: "",
       },
+      fullscreenLoading: false,
       pageNumber: 0,
       perPage: 12,
-      search: "",
-      regionSelect: {},
-      comunas: [],
+      regionSelect: "",
       regiones: [
         {
           id: 1,
@@ -558,14 +563,31 @@ export default {
       let inicio = this.pageNumber * this.perPage,
         fin = inicio + this.perPage;
 
-      return this.farmacias.slice(inicio, fin);
+      if (this.regionSelect === "") {
+        return this.farmacias.slice(inicio, fin);
+      } else {
+        const region = this.regionSelect;
+        return this.farmacias
+          .filter((farmacia) => farmacia.fk_region == region)
+          .slice(inicio, fin);
+      }
     },
     pagesList() {
-      let a = this.farmacias.length,
+      if (this.regionSelect === "") {
+        var a = this.farmacias.length;
+        var b = this.perPage;
+        var pageCount = Math.ceil(a / b);
+        var count = 0;
+        var pagesArray = [];
+      } else {
+        const region = this.regionSelect;
+        a = this.farmacias.filter((farmacia) => farmacia.fk_region == region)
+          .length;
         b = this.perPage;
-      let pageCount = Math.ceil(a / b);
-      let count = 0,
+        pageCount = Math.ceil(a / b);
+        count = 0;
         pagesArray = [];
+      }
 
       while (count < pageCount) {
         pagesArray.push(count);
@@ -575,10 +597,6 @@ export default {
     },
   },
   methods: {
-    cargarComunas() {
-      this.comunas = this.regionSelect;
-      console.log(this.comunas);
-    },
     nextPage() {
       this.pageNumber++;
     },
@@ -589,22 +607,38 @@ export default {
       this.pageNumber = page;
     },
     inicializarPagination() {
+      this.fullscreenLoading = true;
       this.pageNumber = 0;
+      this.fullscreenLoading = false;
     },
     fechaActual() {
       this.fechas.fecha_acual = moment().format("DD-MM-YYYY");
     },
     fetch() {
-      var url = "http://localhost:8080/index.php/ws/getLocalesTurnos/"
+      this.fullscreenLoading = true;
+      //habilite el proxy en el archivo vue.config.js, para que en el navegador no me salte el metodo de seguridad CORS,
+      //que al intentar acceder a una API desde un ORIGIN no permitido bloquea el request.
+      var url = "http://localhost:8080/index.php/ws/getLocalesTurnos/";
       axios
         .get(url)
         .then((response) => {
           this.inicializarPagination();
           this.farmacias = response.data;
+          this.fullscreenLoading = false;
         })
         .catch((error) => {
           console.log(error);
         });
+    },
+    filtro() {
+      if (this.regionSelect === "") {
+        return this.farmacias;
+      } else {
+        const region = this.regionSelect;
+        return this.farmacias.filter(
+          (farmacia) => farmacia.fk_region == region
+        );
+      }
     },
     changePage(page) {
       this.page = page <= 0 || page > this.pages ? this.page : page;
@@ -622,7 +656,7 @@ export default {
 .h1 {
   text-align: center;
 }
-.search{
+.search {
   margin-top: 30px;
 }
 </style>
